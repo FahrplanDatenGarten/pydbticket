@@ -7,11 +7,11 @@ import requests
 from lxml import etree
 
 
-def checkin(nr, name, train_nr, waggon, seat):
+def checkin(order, name, train_nr, waggon, seat):
     """
     Makes a SelfCheckIn-Request
 
-    :param nr: Order-Number of the ticket (e.g. R8U4GK)
+    :param order: Order-Number of the ticket (e.g. R8U4GK)
     :param name: Last name of the traveller
     :param train_nr: Position of the current train in the list of trains in the ticket
     :param waggon: The Waggon Number
@@ -26,7 +26,7 @@ def checkin(nr, name, train_nr, waggon, seat):
         'Content-Type': 'application/json; charset=utf-8'
     }
 
-    parsed_response = request_order(nr, name)
+    parsed_response = request_order(order, name)
 
     if parsed_response.tag != "rperror":
         tkey = parsed_response.find('order').find(
