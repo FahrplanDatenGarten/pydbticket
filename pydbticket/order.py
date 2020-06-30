@@ -95,13 +95,14 @@ class Ticket:
         self.serial_number: Optional[str] = kwargs.get('serial_number')
         self.return_serial_number: Optional[str] = kwargs.get(
             'return_serial_number')
-        self.zugbindung: Optional[bool] = kwargs.get('zugbindung')
+        self.flex_fare: Optional[bool] = kwargs.get('flex_fare')
 
     def parse_xml(self, content: Union[str, bytes, etree._Element]):
         """
         Parses the XML-Tree of a Ticket
 
         :param content: The XML-Content that should be parsed
+        :return: The parsed Ticket
         """
         if isinstance(content, (str, bytes)):
             tree = etree.fromstring(content)
@@ -119,7 +120,11 @@ class Ticket:
         self.serial_number = mtk.find("ot_nr_hin").text
         if mtk.find("ot_nr_rueck") is not None:
             self.return_serial_number = mtk.find("ot_nr_rueck").text
-        self.zugbindung = mtk.find("zb").text == "Y"
+        self.flex_fare = mtk.find("zb").text == "N"
+
+        # TODO: Parse nvplist
+        # TODO: Parse bc
+        # TODO: Parse htdata
 
         return self
 
