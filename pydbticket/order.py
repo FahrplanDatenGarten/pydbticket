@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import datetime
 import random
 from enum import Enum
@@ -5,6 +7,17 @@ from typing import List, Optional, Union
 
 import requests
 from lxml import etree
+
+
+def get(order_id: str, lastname: str) -> Order:
+    """
+    Requests the Order/Ticket
+
+    :param order_id: Order-Number of the ticket (e.g. R8U4GK)
+    :param lastname: Last name of the traveller
+    :return: The requested Order
+    """
+    return Order(order_id, lastname=lastname).get()
 
 
 class Order:
@@ -78,17 +91,6 @@ class Order:
                 self.return_legs.append(Leg().parse_xml(leg_tree))
 
 
-def get(order_id: str, lastname: str) -> Order:
-    """
-    Requests the Order/Ticket
-
-    :param order_id: Order-Number of the ticket (e.g. R8U4GK)
-    :param lastname: Last name of the traveller
-    :return: The requested Order
-    """
-    return Order(order_id, lastname=lastname).get()
-
-
 class OrderCategory(Enum):
     TICKET = 5
     BAHNCARD = 7
@@ -99,6 +101,7 @@ class OrderCategory(Enum):
 
 class Ticket:
     def __init__(self, **kwargs):
+        self.key: Optional[str] = kwargs.get('key')
         self.lastname: Optional[str] = kwargs.get('lastname')
         self.forename: Optional[str] = kwargs.get('forename')
         self.issuer: Optional[int] = kwargs.get('issuer')
@@ -128,6 +131,7 @@ class Ticket:
 
         mtk = tree.find('mtk')
 
+        self.key = mtk.find('tkey').text
         self.forename = mtk.find('reisender_vorname').text
         self.lastname = mtk.find('reisender_nachname').text
         self.issuer = mtk.find('iss').text

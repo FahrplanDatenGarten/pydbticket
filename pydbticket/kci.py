@@ -1,19 +1,19 @@
-import datetime
 import json
-import random
+from typing import Union
 
 import jwt
 import requests
-from lxml import etree
+
+from pydbticket.order import Leg, Order, Ticket
 
 
-def checkin(order, name, train_nr, waggon, seat):
+def checkin(order: Order, leg: Leg,
+            waggon: Union[int, str], seat: Union[int, str]):
     """
     Makes a SelfCheckIn-Request
 
-    :param order: Order-Number of the ticket (e.g. R8U4GK)
-    :param name: Last name of the traveller
-    :param train_nr: Position of the current train in the list of trains in the ticket
+    :param order: The order which shall be checked in
+    :param leg: The leg of the order, wich should be checked in
     :param waggon: The Waggon Number
     :param seat: The Seat Number
     :return: The JSON-Body of the response
@@ -21,42 +21,21 @@ def checkin(order, name, train_nr, waggon, seat):
 
     url = 'https://kanalbackend-navigator-prd-default-kci-tck.dbv.noncd.db.de/sci_sci'
 
+    ticket: Ticket = order.tickets[0]
+
     request_headers = {
         'User-Agent': 'DB Navigator Beta/20.08.s22.30 (Android REL 28)',
         'Content-Type': 'application/json; charset=utf-8'
     }
 
-    parsed_response = request_order(order, name)
-
-    if parsed_response.tag != "rperror":
-        tkey = parsed_response.find('order').find(
-            'tcklist').find('tck').find('mtk').find('tkey').text
-        ot_nummer = parsed_response.find('order').find(
-            'tcklist').find('tck').find('mtk').find('ot_nr_hin').text
-        vorname = parsed_response.find('order').find('tcklist').find(
-            'tck').find('mtk').find('reisender_vorname').text
-        issuer = parsed_response.find('order').find(
-            'tcklist').find('tck').find('mtk').find('iss').text
-
-        train = parsed_response.find('order').find(
-            'schedulelist').find('out').find('trainlist')[train_nr]
-
-        dep = train.find("dep")
-        arr = train.find("arr")
-
-        zugnr = train.find('zugnr').text
-        zuggat = train.find('gat').text
-    else:
-        print('error')
-
     jwt_message = {
         "zug": {
-            "nr": zugnr,
-            "gat": zuggat
+            "nr": leg.number,
+            "gat": leg.kind
         },
         "ticket": {
-            "tkey": tkey,
-            "issuer": int(issuer)
+            "tkey": order.tickets[0].key,
+            "issuer": order.tickets[0].issuer
         },
         "version": 1
     }
@@ -68,16 +47,16 @@ def checkin(order, name, train_nr, waggon, seat):
             "anz_kind": 0,
             "anz_res": 0,
             "ticket": {
-                "reisender_nachname": name,
-                "ot_nummer": ot_nummer,
+                "reisender_nachname": ticket.lastname,
+                "ot_nummer": ticket.serial_number,
                 "bcb_erforderlich": "N",
-                "tkey": tkey,
-                "issuer": int(issuer),
-                "reisender_vorname": vorname
+                "tkey": ticket.key,
+                "issuer": ticket.issuer,
+                "reisender_vorname": ticket.forename
             },
             "zug": {
-                "nr": zugnr,
-                "gat": zuggat,
+                "nr": leg.number,
+                "gat": leg.kind,
             },
             "kl": 2,
             "token": token,
@@ -85,18 +64,18 @@ def checkin(order, name, train_nr, waggon, seat):
             "bcs": [],
             "anz_erw": 1,
             "abfahrt": {
-                "ebhf_nr": dep.find('ebhf_nr').text,
-                "zeit": "2020-06-28T19:28:00Z",
-                "ebhf_name": dep.find('ebhf_name').text,
-                "eva_name": dep.find('ebhf_name').text,
-                "eva_nr": dep.find('ebhf_nr').text
+                "ebhf_nr": leg.departure.station_number,
+                "zeit": leg.departure.datetime.isoformat() + 'Z',
+                "ebhf_name": leg.departure.station_name,
+                "eva_name": leg.departure.station_name,
+                "eva_nr": leg.departure.station_number
             },
             "ankunft": {
-                "ebhf_nr": arr.find('ebhf_nr').text,
-                "zeit": "2020-06-28T20:54:00Z",
-                "ebhf_name": arr.find('ebhf_name').text,
-                "eva_name": arr.find('ebhf_name').text,
-                "eva_nr": dep.find('ebhf_nr').text
+                "ebhf_nr": leg.arrival.station_number,
+                "zeit": leg.arrival.datetime.isoformat() + 'Z',
+                "ebhf_name": leg.arrival.station_name,
+                "eva_name": leg.arrival.station_name,
+                "eva_nr": leg.arrival.station_number
             },
             "bc_rabatts": [],
             "plaetze": [
@@ -115,28 +94,6 @@ def checkin(order, name, train_nr, waggon, seat):
         data=request_body,
         headers=request_headers).content
     return response
-
-
-def request_order(nr, name):
-    """
-    Requests the Ticketdetails
-
-    :param nr: Order-Number of the ticket (e.g. R8U4GK)
-    :param name: Last name of the traveller
-    :return: lxml.etree._Element of the response
-    """
-    xml = '<rqorder on="{}"/><authname tln="{}"/>'.format(
-        nr, name)
-
-    url = 'https://fahrkarten.bahn.de/mobile/dbc/xs.go'
-    tnr = random.getrandbits(64)
-    ts = datetime.datetime.now().strftime('%Y-%m-%dT%H:%M:%S')
-    request_body = '<rqorderdetails version="2.0"><rqheader tnr="{0}" ts="{1}" v="19100000" d="iPhone10,4" os="iOS_13.1.3" app="NAVIGATOR"/>{2}</rqorderdetails>'.format(
-        tnr,
-        ts,
-        xml)
-    response = requests.post(url, data=request_body).content
-    return etree.fromstring(response)
 
 
 def gen_token(message):
