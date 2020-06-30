@@ -45,7 +45,11 @@ class Order:
 
         return response.content
 
-    def parse_xml(self, content: Union[str, bytes, etree._Element]):
+    def parse_xml(self,
+                  content: Union[str,
+                                 bytes,
+                                 etree._Element,
+                                 etree._ElementTree]):
         """
         Parses the XML-Tree of an Order
 
@@ -53,7 +57,7 @@ class Order:
         """
         if isinstance(content, (str, bytes)):
             tree = etree.fromstring(content)
-        elif isinstance(content, etree._Element):
+        elif isinstance(content, (etree._Element, etree._ElementTree)):
             tree = content
         else:
             raise TypeError()
@@ -66,11 +70,11 @@ class Order:
             for ticket_tree in tree.find('order').find(
                     'tcklist').findall('tck'):
                 self.tickets.append(Ticket().parse_xml(ticket_tree))
-            for leg_tree in tree.find('order').find(
-                    'schedulelist').find('out').find('trainlist').findall('train'):
+            for leg_tree in tree.find('order').find('schedulelist').find(
+                    'out').find('trainlist').findall('train'):
                 self.outward_legs.append(Leg().parse_xml(leg_tree))
-            for leg_tree in tree.find('order').find(
-                'schedulelist').find('ret').find('trainlist').findall('train'):
+            for leg_tree in tree.find('order').find('schedulelist').find(
+                    'ret').find('trainlist').findall('train'):
                 self.return_legs.append(Leg().parse_xml(leg_tree))
 
 
@@ -104,7 +108,11 @@ class Ticket:
             'return_serial_number')
         self.flex_fare: Optional[bool] = kwargs.get('flex_fare')
 
-    def parse_xml(self, content: Union[str, bytes, etree._Element]):
+    def parse_xml(self,
+                  content: Union[str,
+                                 bytes,
+                                 etree._Element,
+                                 etree._ElementTree]):
         """
         Parses the XML-Tree of a Ticket
 
@@ -113,7 +121,7 @@ class Ticket:
         """
         if isinstance(content, (str, bytes)):
             tree = etree.fromstring(content)
-        elif isinstance(content, etree._Element):
+        elif isinstance(content, (etree._Element, etree._ElementTree)):
             tree = content
         else:
             raise TypeError()
@@ -141,8 +149,14 @@ class Leg:
         self.number: Optional[str] = kwargs.get('number')
         self.kind: Optional[str] = kwargs.get('kind')
         self.self_checkin: Optional[bool] = kwargs.get('self_checkin')
+        self.departure: Optional[StopOver] = kwargs.get('departure')
+        self.arrival: Optional[StopOver] = kwargs.get('arrival')
 
-    def parse_xml(self, content: Union[str, bytes, etree._Element]):
+    def parse_xml(self,
+                  content: Union[str,
+                                 bytes,
+                                 etree._Element,
+                                 etree._ElementTree]):
         """
         Parses the XML-Tree of a Leg
 
@@ -151,7 +165,7 @@ class Leg:
         """
         if isinstance(content, (str, bytes)):
             tree = etree.fromstring(content)
-        elif isinstance(content, etree._Element):
+        elif isinstance(content, (etree._Element, etree._ElementTree)):
             tree = content
         else:
             raise TypeError()
@@ -160,8 +174,50 @@ class Leg:
         self.number = tree.find('zugnr').text
         self.self_checkin = tree.find('sci').text == 'Y'
 
-        # TODO: Parse arr
-        # TODO: Parse dep
+        self.departure = StopOver().parse_xml(tree.find('dep'))
+        self.arrival = StopOver().parse_xml(tree.find('arr'))
+
+        return self
+
+
+class StopOver:
+    def __init__(self, **kwargs):
+        self.datetime: Optional[datetime.datetime] = kwargs.get('datetime')
+        self.station_name: Optional[str] = kwargs.get('station_name')
+        self.station_number: Optional[str] = kwargs.get('station_number')
+        self.station_plz: Optional[str] = kwargs.get('station_plz')
+        self.station_x: Optional[str] = kwargs.get('station_x')
+        self.station_y: Optional[str] = kwargs.get('station_y')
+        self.platform: Optional[str] = kwargs.get('platform')
+
+    def parse_xml(self,
+                  content: Union[str,
+                                 bytes,
+                                 etree._Element,
+                                 etree._ElementTree]):
+        """
+        Parses the XML-Tree of a StopOver
+
+        :param content: The XML-Content that should be parsed
+        :return: The parsed StopOver
+        """
+        if isinstance(content, (str, bytes)):
+            tree = etree.fromstring(content)
+        elif isinstance(content, (etree._Element, etree._ElementTree)):
+            tree = content
+        else:
+            raise TypeError()
+
+        self.datetime = datetime.datetime.fromisoformat(
+            'T'.join([tree.attrib['dt'].split('T')[0], tree.attrib['t']]))
+        self.station_name = tree.find('n').text
+        self.station_number = tree.find('nr').text
+        self.station_x = tree.find('x').text
+        self.station_y = tree.find('y').text
+        if tree.find('plz') is not None:
+            self.station_plz = tree.find('plz').text
+        if tree.find('ptf') is not None:
+            self.platform = tree.find('ptf').text
 
         return self
 
