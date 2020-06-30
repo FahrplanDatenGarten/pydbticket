@@ -13,7 +13,8 @@ class Order:
     def __init__(self, order_id: str, **kwargs):
         self.order_id: str = order_id
         self.lastname: Optional[str] = kwargs.get('lastname')
-        self.trains: List[Train] = kwargs.get('trains', [])
+        self.outward_legs: List[Leg] = kwargs.get('outward_legs', [])
+        self.return_legs: List[Leg] = kwargs.get('return_legs', [])
         self.tickets: List[Ticket] = kwargs.get('tickets', [])
         self.bahncard: Optional[BahnCard] = kwargs.get('bahncard')
         self.category: Optional[OrderCategory] = kwargs.get('category')
@@ -65,6 +66,12 @@ class Order:
             for ticket_tree in tree.find('order').find(
                     'tcklist').findall('tck'):
                 self.tickets.append(Ticket().parse_xml(ticket_tree))
+            for leg_tree in tree.find('order').find(
+                    'schedulelist').find('out').find('trainlist').findall('train'):
+                self.outward_legs.append(Leg().parse_xml(leg_tree))
+            for leg_tree in tree.find('order').find(
+                'schedulelist').find('ret').find('trainlist').findall('train'):
+                self.return_legs.append(Leg().parse_xml(leg_tree))
 
 
 def get(order_id: str, lastname: str) -> Order:
@@ -129,7 +136,37 @@ class Ticket:
         return self
 
 
-class Train:
+class Leg:
+    def __init__(self, **kwargs):
+        self.number: Optional[str] = kwargs.get('number')
+        self.kind: Optional[str] = kwargs.get('kind')
+        self.self_checkin: Optional[bool] = kwargs.get('self_checkin')
+
+    def parse_xml(self, content: Union[str, bytes, etree._Element]):
+        """
+        Parses the XML-Tree of a Leg
+
+        :param content: The XML-Content that should be parsed
+        :return: The parsed Leg
+        """
+        if isinstance(content, (str, bytes)):
+            tree = etree.fromstring(content)
+        elif isinstance(content, etree._Element):
+            tree = content
+        else:
+            raise TypeError()
+
+        self.kind = tree.find('gat').text
+        self.number = tree.find('zugnr').text
+        self.self_checkin = tree.find('sci').text == 'Y'
+
+        # TODO: Parse arr
+        # TODO: Parse dep
+
+        return self
+
+
+class Reservation:
     def __init__(self, **kwargs):
         raise NotImplementedError()
 
