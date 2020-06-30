@@ -7,21 +7,19 @@ import requests
 from pydbticket.order import Leg, Order, Ticket
 
 
-def checkin(order: Order, leg: Leg,
-            waggon: Union[int, str], seat: Union[int, str]):
+def checkin(ticket: Ticket, leg: Leg,
+            coach: Union[int, str], seat: Union[int, str]):
     """
     Makes a SelfCheckIn-Request
 
-    :param order: The order which shall be checked in
+    :param ticket: A valid ticket for the leg
     :param leg: The leg of the order, wich should be checked in
-    :param waggon: The Waggon Number
+    :param coach: The Waggon Number
     :param seat: The Seat Number
     :return: The JSON-Body of the response
     """
 
     url = 'https://kanalbackend-navigator-prd-default-kci-tck.dbv.noncd.db.de/sci_sci'
-
-    ticket: Ticket = order.tickets[0]
 
     request_headers = {
         'User-Agent': 'DB Navigator Beta/20.08.s22.30 (Android REL 28)',
@@ -34,8 +32,8 @@ def checkin(order: Order, leg: Leg,
             "gat": leg.kind
         },
         "ticket": {
-            "tkey": order.tickets[0].key,
-            "issuer": order.tickets[0].issuer
+            "tkey": ticket.key,
+            "issuer": ticket.issuer
         },
         "version": 1
     }
@@ -80,7 +78,7 @@ def checkin(order: Order, leg: Leg,
             "bc_rabatts": [],
             "plaetze": [
                 {
-                    "wagennr": int(waggon),
+                    "wagennr": int(coach),
                     "platznr": int(seat)
                 }
             ]
