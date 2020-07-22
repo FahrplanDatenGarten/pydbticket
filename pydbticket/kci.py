@@ -2,9 +2,10 @@ import json
 from typing import Union
 
 import jwt
+import pytz
 import requests
 
-from pydbticket.order import Leg, Order, Ticket
+from pydbticket.order import Leg, Ticket
 
 
 def checkin(ticket: Ticket, leg: Leg,
@@ -71,7 +72,9 @@ def checkin(ticket: Ticket, leg: Leg,
                 "eva_nr": leg.departure.station_number},
             "ankunft": {
                 "ebhf_nr": leg.arrival.station_number,
-                "zeit": leg.arrival.datetime.isoformat() + 'Z',
+                "zeit": pytz.UTC.normalize(
+                    leg.departure.datetime).replace(
+                    tzinfo=None).isoformat() + 'Z',
                 "ebhf_name": leg.arrival.station_name,
                 "eva_name": leg.arrival.station_name,
                 "eva_nr": leg.arrival.station_number,
@@ -87,6 +90,7 @@ def checkin(ticket: Ticket, leg: Leg,
     }
 
     request_body = json.dumps(body)
+    print(request_body)
 
     response = requests.post(
         url,

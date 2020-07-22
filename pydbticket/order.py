@@ -87,9 +87,12 @@ class Order:
             for leg_tree in tree.find('order').find('schedulelist').find(
                     'out').find('trainlist').findall('train'):
                 self.outward_legs.append(Leg().parse_xml(leg_tree))
-            for leg_tree in tree.find('order').find('schedulelist').find(
-                    'ret').find('trainlist').findall('train'):
-                self.return_legs.append(Leg().parse_xml(leg_tree))
+            try:
+                for leg_tree in tree.find('order').find('schedulelist').find(
+                        'ret').find('trainlist').findall('train'):
+                    self.return_legs.append(Leg().parse_xml(leg_tree))
+            except AttributeError:
+                pass
 
 
 class OrderCategory(Enum):
