@@ -50,8 +50,7 @@ def checkin(ticket: Ticket, leg: Leg,
                 "bcb_erforderlich": "N",
                 "tkey": ticket.key,
                 "issuer": ticket.issuer,
-                "reisender_vorname": ticket.forename
-            },
+                "reisender_vorname": ticket.forename},
             "zug": {
                 "nr": leg.number,
                 "gat": leg.kind,
@@ -63,27 +62,23 @@ def checkin(ticket: Ticket, leg: Leg,
             "anz_erw": 1,
             "abfahrt": {
                 "ebhf_nr": leg.departure.station_number,
-                "zeit": leg.departure.datetime.isoformat() + 'Z',
+                "zeit": pytz.UTC.normalize(
+                    leg.departure.datetime).replace(
+                    tzinfo=None).isoformat() + 'Z',
                 "ebhf_name": leg.departure.station_name,
                 "eva_name": leg.departure.station_name,
-                "eva_nr": leg.departure.station_number
-            },
+                "eva_nr": leg.departure.station_number},
             "ankunft": {
                 "ebhf_nr": leg.arrival.station_number,
                 "zeit": leg.arrival.datetime.isoformat() + 'Z',
                 "ebhf_name": leg.arrival.station_name,
                 "eva_name": leg.arrival.station_name,
-                "eva_nr": leg.arrival.station_number
-            },
+                "eva_nr": leg.arrival.station_number},
             "bc_rabatts": [],
             "plaetze": [
                 {
                     "wagennr": int(coach),
-                    "platznr": int(seat)
-                }
-            ]
-        }
-    }
+                    "platznr": int(seat)}]}}
 
     request_body = json.dumps(body)
 

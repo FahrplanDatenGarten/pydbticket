@@ -5,6 +5,7 @@ import random
 from enum import Enum
 from typing import List, Optional, Union
 
+import pytz
 import requests
 from lxml import etree
 
@@ -212,8 +213,10 @@ class StopOver:
         else:
             raise TypeError()
 
-        self.datetime = datetime.datetime.fromisoformat(
-            'T'.join([tree.attrib['dt'].split('T')[0], tree.attrib['t']]))
+        tz = pytz.timezone('Europe/Berlin')
+        self.datetime = tz.localize(datetime.datetime.fromisoformat(
+            'T'.join([tree.attrib['dt'].split('T')[0], tree.attrib['t']])))
+
         self.station_name = tree.find('n').text
         self.station_number = tree.find('nr').text
         self.station_x = tree.find('x').text
