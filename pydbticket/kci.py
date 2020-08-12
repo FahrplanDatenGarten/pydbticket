@@ -73,7 +73,7 @@ def checkin(ticket: Ticket, leg: Leg,
             "ankunft": {
                 "ebhf_nr": leg.arrival.station_number,
                 "zeit": pytz.UTC.normalize(
-                    leg.departure.datetime).replace(
+                    leg.arrival.datetime).replace(
                     tzinfo=None).isoformat() + 'Z',
                 "ebhf_name": leg.arrival.station_name,
                 "eva_name": leg.arrival.station_name,
